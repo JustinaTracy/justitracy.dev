@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>justitracy.dev</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: #111111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Floating elements container */
+    .floats {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .floats img {
+      position: absolute;
+      will-change: transform, opacity;
+    }
+
+    /* Hero image */
+    .hero {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0 1rem;
+      opacity: 0;
+      transform: scale(0.94);
+      animation: heroIn 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+    }
+
+    .hero img {
+      width: 50vw;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 0 40px rgba(232, 131, 58, 0.06));
+    }
+
+    /* Footer */
+    footer {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      text-align: center;
+      max-width: 480px;
+      width: 90%;
+      opacity: 0;
+      transition: opacity 600ms ease;
+    }
+
+    footer.visible { opacity: 1; }
+
+    .verse-text {
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(200, 200, 200, 0.5);
+      line-height: 1.6;
+    }
+
+    .verse-ref {
+      font-size: 12px;
+      font-style: italic;
+      color: rgba(200, 200, 200, 0.35);
+      margin-top: 5px;
+      font-weight: 600;
+    }
+
+    @keyframes heroIn {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 480px) {
+      .hero { padding: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero { opacity: 1 !important; transform: none !important; animation: none !important; }
+      footer { opacity: 1 !important; transition: none !important; }
+      .floats { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating images layer -->
+  <div class="floats" id="floats" aria-hidden="true"></div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <img src="whayareyouhere.png" alt="Why are you here? surrounded by daisies and leaves">
+  </div>
+
+  <!-- Scripture -->
+  <footer aria-label="Scripture" id="footer">
+    <div class="verse-text" id="verse-body"></div>
+    <div class="verse-ref" id="verse-ref"></div>
+  </footer>
+
+<script>
+(function () {
+  /* ── Verses ── */
+  var verses = [
+    { text: '\u201CFor I know the plans I have for you,\u201D declares the Lord, \u201Cplans to prosper you and not to harm you, plans to give you hope and a future.\u201D', ref: 'Jeremiah 29:11' },
+    { text: 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.', ref: 'John 3:16' },
+    { text: 'I can do all this through him who gives me strength.', ref: 'Philippians 4:13' },
+    { text: 'And we know that in all things God works for the good of those who love him, who have been called according to his purpose.', ref: 'Romans 8:28' },
+    { text: 'He says, \u201CBe still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth.\u201D', ref: 'Psalm 46:10' },
+    { text: 'Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.', ref: 'Proverbs 3:5\u20136' },
+    { text: 'But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.', ref: 'Isaiah 40:31' },
+    { text: 'In the same way, let your light shine before others, that they may see your good deeds and glorify your Father in heaven.', ref: 'Matthew 5:16' },
+    { text: 'The Lord is my shepherd, I lack nothing.', ref: 'Psalm 23:1' },
+    { text: 'For the Spirit God gave us does not make us timid, but gives us power, love and self-discipline.', ref: '2 Timothy 1:7' }
+  ];
+  var v = verses[Math.floor(Math.random() * 10)];
+  document.getElementById('verse-body').textContent = v.text;
+  document.getElementById('verse-ref').textContent = '\u2014 ' + v.ref + ' (NIV)';
+
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Show verse after hero fades in
+  setTimeout(function () {
+    document.getElementById('footer').classList.add('visible');
+  }, prefersReduced ? 0 : 1800);
+
+  if (prefersReduced) return;
+
+  /* ── Floating images ── */
+  var container = document.getElementById('floats');
+  var W = window.innerWidth;
+  var H = window.innerHeight;
+  var sources = ['flower.png', 'LEAF.png', 'LITTLEHEART.png'];
+  // Weighted: more leaves & hearts, fewer flowers
+  var pool = [0, 1, 1, 1, 2, 2, 2, 2];
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+
+  function spawnFloat() {
+    var idx = pool[Math.floor(Math.random() * pool.length)];
+    var src = sources[idx];
+
+    var img = document.createElement('img');
+    img.src = src;
+
+    // Size based on type
+    var size;
+    if (idx === 0) size = rnd(40, 80);       // flower
+    else if (idx === 1) size = rnd(20, 45);   // leaf
+    else size = rnd(12, 28);                  // heart
+
+    img.style.width = size + 'px';
+    img.style.height = 'auto';
+
+    // Start from a random edge
+    var edge = Math.floor(rnd(0, 4));
+    var sx, sy, ex, ey;
+
+    if (edge === 0) {        // top
+      sx = rnd(0, W); sy = -size;
+      ex = sx + rnd(-150, 150); ey = H + size;
+    } else if (edge === 1) { // right
+      sx = W + size; sy = rnd(0, H);
+      ex = -size; ey = sy + rnd(-150, 150);
+    } else if (edge === 2) { // bottom
+      sx = rnd(0, W); sy = H + size;
+      ex = sx + rnd(-150, 150); ey = -size;
+    } else {                 // left
+      sx = -size; sy = rnd(0, H);
+      ex = W + size; ey = sy + rnd(-150, 150);
+    }
+
+    var duration = rnd(14, 26) * 1000;
+    var startRot = rnd(-30, 30);
+    var endRot = startRot + rnd(-180, 180);
+    var opacity = rnd(0.15, 0.4);
+    var startTime = null;
+
+    img.style.left = '0px';
+    img.style.top = '0px';
+    img.style.opacity = '0';
+    container.appendChild(img);
+
+    function tick(now) {
+      if (!startTime) startTime = now;
+      var t = (now - startTime) / duration;
+
+      if (t >= 1) {
+        container.removeChild(img);
+        spawnFloat();
+        return;
+      }
+
+      var x = sx + (ex - sx) * t;
+      var y = sy + (ey - sy) * t;
+      var rot = startRot + (endRot - startRot) * t;
+
+      // Fade in first 10%, fade out last 10%
+      var op = opacity;
+      if (t < 0.1) op = opacity * (t / 0.1);
+      else if (t > 0.9) op = opacity * ((1 - t) / 0.1);
+
+      img.style.transform = 'translate(' + x + 'px,' + y + 'px) rotate(' + rot + 'deg)';
+      img.style.opacity = op;
+
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  // Spawn initial batch staggered
+  var isMobile = W <= 480;
+  var count = isMobile ? 8 : 15;
+  for (var i = 0; i < count; i++) {
+    setTimeout(spawnFloat, i * rnd(200, 600));
+  }
+})();
+</script>
+</body>
+</html>
